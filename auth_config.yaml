@@ -1,0 +1,15 @@
+credentials:
+  usernames:
+    demo:
+      email: demo@project.com
+      name: Demo User
+      password: "demo123"  # Change this in production
+
+cookie:
+  expiry_days: 30
+  key: "some_signature_key_here_change_this"  # Random string
+  name: "enterprise_pipeline_demo"
+
+preauthorized:
+  emails:
+    - "demo@project.com"

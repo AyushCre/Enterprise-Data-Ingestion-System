@@ -1,0 +1,85 @@
+# ⚡ Enterprise Batch Data Pipeline & Security System
+
+### High-Performance Data Ingestion Engine with Malware Detection
+
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red)
+![Security](https://img.shields.io/badge/Security-Malware%20Detection-green)
+![Concurrency](https://img.shields.io/badge/Architecture-Parallel%20Processing-orange)
+
+---
+
+## 📖 Executive Summary
+This project represents a scalable, secure, and high-performance **ETL (Extract, Transform, Load) Pipeline** designed for enterprise environments. It addresses three critical challenges in modern data engineering:
+1.  **Security:** Preventing malicious file uploads (Malware/SQL Injection) before processing.
+2.  **Performance:** Reducing processing latency by **6x-10x** using Parallel Architecture.
+3.  **Flexibility:** Handling multiple formats (CSV & JSON) seamlessly with automated analytics.
+
+---
+
+## 🚀 Key Features
+
+### 🛡️ 1. Advanced Security Layer (The "Firewall")
+Before any data enters the pipeline, it passes through a rigorous **Security Inspector** that performs:
+* **Magic Byte Verification:** Detects executables (`.exe`) masking as CSV/JSON.
+* **Heuristic Payload Analysis:** Scans for SQL Injection (`DROP TABLE`) and XSS attacks (`<script>`).
+* **Double-Extension Detection:** Blocks spoofing attempts like `data.csv.exe`.
+
+### ⚡ 2. High-Performance Computing (HPC)
+* **Parallel Processing Engine:** Utilizes Python's `ProcessPoolExecutor` to utilize all CPU cores.
+* **Benchmarking Tool:** Includes a live comparison mode showing **Sequential vs. Parallel** speedup metrics.
+
+### 📊 3. Automated Analytics & Reporting
+* **Dynamic Visualization:** Automatically generates financial insights (Revenue by Region) based on processed data.
+* **KPI Dashboard:** Real-time metrics for Total Revenue, Transaction Volume, and Averages.
+* **One-Click Export:** Processed artifacts are standardized to CSV and available for instant download.
+
+---
+
+## 🛠️ Tech Stack
+
+* **Language:** Python 3.x
+* **Interface:** Streamlit (React-style declarative UI)
+* **Data Manipulation:** Pandas (Vectorized operations)
+* **Concurrency:** Python Multiprocessing Module
+* **I/O Operations:** Shutil & OS modules
+
+---
+
+## 📂 Project Structure
+
+```bash
+├── modules/
+│   ├── security.py       # Security protocols & threat detection logic
+│   ├── processor.py      # Parallel & Sequential processing engines
+├── ui/
+│   ├── dashboard.py      # Main Streamlit Dashboard Interface
+├── raw_data/             # Staging area for incoming files (Gitignored)
+├── processed_data/       # Output folder for clean artifacts (Gitignored)
+├── config.py             # Global configurations and path management
+├── main.py               # Application Entry Point
+├── create_mixed_data.py  # Script to generate dummy datasets (CSV/JSON)
+├── create_security_test.py # Script to generate malware for testing
+├── requirements.txt      # Project dependencies
+└── README.md             # Documentation
+
+⚙️ How to Run
+1.Install Dependencies
+Bash
+pip install -r requirements.txt
+
+2.Launch the Dashboard
+Bash
+streamlit run main.py
+
+🧪 Testing the Security Module
+To demonstrate the security capabilities, run the included test generator:
+
+Bash
+python create_security_test.py
+
+This will generate:
+clean_data.csv (✅ Should Pass)
+malicious_executable.exe (❌ Should be Blocked)
+payload_injection_attack.csv (❌ Should be Blocked)
+Upload these files to the dashboard to witness the Threat Detection Module in action.

@@ -1,0 +1,25 @@
+# --- System Files ---
+.DS_Store
+Thumbs.db
+
+# --- Python Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Environments ---
+venv/
+env/
+.env
+
+# --- Project Data Directories (IMPORTANT: Never commit data) ---
+raw_data/
+processed_data/
+security_test_files/
+security_test_suite/
+json_dummy_files/
+mixed_test_files/
+
+# --- IDE Settings ---
+.vscode/
+.idea/
