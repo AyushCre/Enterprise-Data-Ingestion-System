@@ -1,2 +1,0 @@
-{"timestamp": "2026-01-05T06:17:47.043102Z", "filename": "payload_injection_attack.csv", "status": "BLOCKED", "reason": "Threat Signature Detected: <script", "file_hash_sha256": "c21715f3ae35b137bdc709055e1279bef3ac3b98f09345c8d707ff192322db2c", "scan_engine": "v2.1-Enterprise"}
-{"timestamp": "2026-01-05T06:17:47.052022Z", "filename": "valid_clean_data.csv", "status": "CLEAN", "reason": "Passed all inspections", "file_hash_sha256": "a03a3909489963962087770530e18165be8d61db201770e07067b72db47d6227", "scan_engine": "v2.1-Enterprise"}
