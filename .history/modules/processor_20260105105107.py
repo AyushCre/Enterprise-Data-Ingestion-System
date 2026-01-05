@@ -16,7 +16,7 @@ def transformation_logic(file_path: str) -> bool:
         if not os.path.exists(file_path):
             return False
             
-        # Check extension to decide how to read
+        # CHANGE: Check extension to decide how to read
         if file_path.endswith('.json'):
             df = pd.read_json(file_path)
         else:
@@ -26,12 +26,10 @@ def transformation_logic(file_path: str) -> bool:
         time.sleep(0.05) 
         # -------------------------------------------------
 
-        # Business Logic: 18% Tax (With Rounding Fix)
+        # Business Logic: 18% Tax (Example)
         if 'Amount' in df.columns:
-            # Calculation ke turant baad .round(2) laga diya hai
-            # Taaki decimal values 2 places tak hi rahein (e.g., 789.84)
-            df['Tax_Amount'] = (df['Amount'] * 0.18).round(2)
-            df['Total_Amount'] = (df['Amount'] + df['Tax_Amount']).round(2)
+            df['Tax_Amount'] = df['Amount'] * 0.18
+            df['Total_Amount'] = df['Amount'] + df['Tax_Amount']
         
         # Save as CSV (Standardizing output format for Dashboard Inspector)
         filename = os.path.basename(file_path)

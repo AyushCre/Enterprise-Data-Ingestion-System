@@ -9,17 +9,17 @@ from config import RAW_DATA_DIR, PROCESSED_DATA_DIR
 from modules.processor import process_sequential, process_parallel
 from modules.security import SecurityInspector
 
-# --- Helper Functions ---
-
 def natural_sort_key(text):
     """
-    Helper function for natural sorting (e.g., TXN-2 comes before TXN-10).
+    Helper function to enable natural sorting of filenames and IDs.
+    Example: Ensures 'TXN-2' comes before 'TXN-10'.
     """
     return [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', str(text))]
 
 def save_uploaded_files(uploaded_files):
     """
-    Saves uploaded files to disk after security checks.
+    Persists uploaded files to the local raw data directory after SECURITY VALIDATION.
+    Returns the count of successfully saved files.
     """
     if os.path.exists(RAW_DATA_DIR):
         shutil.rmtree(RAW_DATA_DIR)
@@ -28,9 +28,11 @@ def save_uploaded_files(uploaded_files):
     saved_count = 0
     rejected_count = 0
     progress_bar = st.progress(0, text="Initializing Security Protocols...")
+    
     total_files = len(uploaded_files)
     
     for i, uploaded_file in enumerate(uploaded_files):
+        # --- SECURITY CHECKPOINT ---
         is_safe, reason = SecurityInspector.inspect_file(uploaded_file)
         
         if is_safe:
@@ -56,64 +58,50 @@ def save_uploaded_files(uploaded_files):
 
 def create_merged_zip():
     """
-    Memory-Efficient Merging (Chunking Method):
-    Reads files one by one, writes to disk, and clears RAM immediately.
-    Allows creating massive (1GB+) CSVs without crashing the system.
+    Reads all processed CSV files, merges them, SORTS THEM BY TRANSACTION ID,
+    saves as one master CSV, and returns the ZIP path.
     """
-    # 1. Get all processed files
+    # 1. Identify all processed CSV files
     all_files = [os.path.join(PROCESSED_DATA_DIR, f) for f in os.listdir(PROCESSED_DATA_DIR) if f.endswith('.csv')]
     
     if not all_files:
         return None
 
-    # 2. Sort files to maintain serial order (e.g., file_1, file_2...)
-    all_files.sort(key=lambda x: natural_sort_key(os.path.basename(x)))
-
+    # 2. Read and Merge
+    df_list = [pd.read_csv(f) for f in all_files]
+    if not df_list:
+        return None
+        
+    merged_df = pd.concat(df_list, ignore_index=True)
+    
+    # --- NEW: SERIAL WISE SORTING LOGIC ---
+    # Ye ensure karega ki TXN-1, TXN-2, ... TXN-10 line se aaye
+    if 'Transaction_ID' in merged_df.columns:
+        try:
+            merged_df.sort_values(
+                by='Transaction_ID', 
+                key=lambda x: x.map(natural_sort_key), 
+                inplace=True
+            )
+        except Exception as e:
+            print(f"Sorting Error: {e}") # Fallback if sorting fails
+            
+    # 3. Save as a single Master CSV
     master_csv_name = "Enterprise_Consolidated_Data.csv"
+    merged_df.to_csv(master_csv_name, index=False)
     
-    # 3. Process Chunk-by-Chunk
-    first_file = True
-    
-    # Open the master file once in write mode
-    with open(master_csv_name, 'w', encoding='utf-8') as outfile:
-        for file_path in all_files:
-            try:
-                # Load ONLY one small file into RAM
-                df_chunk = pd.read_csv(file_path)
-                
-                # Sort inside the chunk if needed
-                if 'Transaction_ID' in df_chunk.columns:
-                     df_chunk.sort_values(
-                        by='Transaction_ID', 
-                        key=lambda x: x.map(natural_sort_key), 
-                        inplace=True
-                    )
-                
-                # Write to disk (Header included only for the first chunk)
-                df_chunk.to_csv(outfile, index=False, header=first_file)
-                
-                first_file = False 
-                
-                # Free up RAM immediately
-                del df_chunk 
-                
-            except Exception as e:
-                print(f"Skipping corrupt file {file_path}: {e}")
-
-    # 4. Create ZIP from the Master CSV
+    # 4. Create ZIP
     zip_filename = "Enterprise_Full_Report.zip"
     with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
         zipf.write(master_csv_name)
     
-    # Remove the temporary raw CSV to save space
-    if os.path.exists(master_csv_name):
-        os.remove(master_csv_name)
-    
+    os.remove(master_csv_name)
     return zip_filename
 
-# --- Main Dashboard Logic ---
-
 def render_dashboard():
+    """
+    Main entry point for the Streamlit Dashboard UI.
+    """
     st.set_page_config(page_title="Enterprise Data Pipeline", page_icon="⚡", layout="wide")
     
     st.markdown("""
@@ -126,7 +114,7 @@ def render_dashboard():
     st.markdown("**High-Performance Computing & Data Ingestion System**")
     st.markdown("---")
 
-    # Sidebar
+    # --- Sidebar ---
     with st.sidebar:
         st.header("⚙️ System Configuration")
         if st.button("🧹 Reset Workspace"):
@@ -138,7 +126,7 @@ def render_dashboard():
                 os.makedirs(PROCESSED_DATA_DIR)
             st.toast("Workspace reset successfully.", icon="🗑️")
 
-    # Module 1: Ingestion
+    # --- MODULE 1: INGESTION ---
     st.subheader("1. Data Ingestion Module")
     uploaded_files = st.file_uploader(
         "Upload Source Files (CSV/JSON)", 
@@ -156,7 +144,7 @@ def render_dashboard():
 
     st.markdown("---")
 
-    # Module 2: Processing
+    # --- MODULE 2: PROCESSING ---
     st.subheader("2. Processing Orchestration Engine")
     
     files = []
@@ -170,8 +158,10 @@ def render_dashboard():
         st.write(f"Queue Status: **{len(files)} items pending**")
         
         col_prod, col_benchmark = st.columns(2)
+        
         with col_prod:
             prod_run = st.button("🚀 Execute Production Pipeline (Parallel)", type="primary", use_container_width=True)
+            
         with col_benchmark:
             comp_run = st.button("⚔️ Run Performance Benchmark", use_container_width=True)
 
@@ -189,6 +179,7 @@ def render_dashboard():
                 bar1 = st.progress(0)
                 t_par = process_parallel(files, lambda p, t: bar1.progress(p, text=t))
                 st.metric("Latency", f"{t_par:.4f} s")
+
             with col2:
                 st.markdown("### 🐢 Sequential (Legacy)")
                 bar2 = st.progress(0)
@@ -201,9 +192,11 @@ def render_dashboard():
                 else:
                     delta_msg = f"{diff:.4f} s (Faster)"
                     delta_color_mode = "inverse"
+
                 st.metric("Latency", f"{t_seq:.4f} s", delta=delta_msg, delta_color=delta_color_mode)
 
             st.divider()
+            
             if t_par > 0:
                 speedup_factor = t_seq / t_par
                 if speedup_factor >= 1.0:
@@ -213,25 +206,25 @@ def render_dashboard():
 
     st.markdown("---")
     
-    # Module 3: Analytics & Export
+    # --- MODULE 3: ANALYTICS & EXPORT ---
     st.subheader("3. Analytics & Export Module")
     
     processed_files = []
     if os.path.exists(PROCESSED_DATA_DIR):
         processed_files = [f for f in os.listdir(PROCESSED_DATA_DIR) if f.endswith('.csv')]
     
+    # Use the same natural sort for the dropdown list
     processed_files.sort(key=natural_sort_key)
 
     if processed_files:
-        # Merged Download Section
+        # --- MERGED DOWNLOAD WITH SORTING ---
         with st.container():
             col_bulk_info, col_bulk_btn = st.columns([3, 1])
             with col_bulk_info:
                 st.info(f"✅ **Batch Ready:** {len(processed_files)} processed files available for consolidation.")
-                st.caption("Data will be consolidated and downloaded as a single Master Dataset.")
+                st.caption("Data will be automatically sorted by Transaction ID.")
             
             with col_bulk_btn:
-                # Generate Zip on Click
                 zip_path = create_merged_zip()
                 if zip_path:
                     with open(zip_path, "rb") as f:
@@ -243,10 +236,11 @@ def render_dashboard():
                             type="primary",
                             use_container_width=True
                         )
+        
         st.divider()
 
-        # Individual File Inspection
         col_sel, col_down = st.columns([3, 1])
+        
         with col_sel:
             selected_file = st.selectbox("Inspect Individual Artifact:", processed_files)
 
@@ -254,6 +248,7 @@ def render_dashboard():
             file_path = os.path.join(PROCESSED_DATA_DIR, selected_file)
             try:
                 df_preview = pd.read_csv(file_path)
+                
                 tab1, tab2 = st.tabs(["📄 Data View", "📊 Visual Analytics"])
                 
                 with tab1:
@@ -283,6 +278,7 @@ def render_dashboard():
                             mime="text/csv",
                             use_container_width=True
                         )
+
             except Exception as e:
                 st.error(f"Error reading artifact: {e}")
     else:
